@@ -1,3 +1,6 @@
+#define GLEW_STATIC
+#include <stdio.h>
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 int main(int argc, char** argv) {
@@ -13,6 +16,12 @@ int main(int argc, char** argv) {
 	}
 
 	glfwMakeContextCurrent(window);
+
+	if(glewInit() != GLEW_OK) {
+		return 1;
+	}
+
+	printf("OpenGL: %s\n", glGetString(GL_VERSION));
 
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT);
