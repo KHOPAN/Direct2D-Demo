@@ -13,3 +13,7 @@ BOOLEAN InitializeDirect2D(ID2D1Factory** factory) {
 void ReleaseFactory(ID2D1Factory* factory) {
 	factory->Release();
 }
+
+void ResizeTarget(ID2D1HwndRenderTarget* target, LPARAM lparam) {
+	target->Resize(D2D1::SizeU(HIWORD(lparam), LOWORD(lparam)));
+}

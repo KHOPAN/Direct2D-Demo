@@ -2,11 +2,38 @@
 
 #define CLASS_NAME L"DemoDirect2DClassName"
 
+typedef struct {
+	ID2D1Factory* factory;
+	ID2D1HwndRenderTarget* target;
+} DATA, *PDATA;
+
+static HANDLE processHeap;
+
 static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+	PDATA data = (PDATA) GetWindowLongPtrW(window, GWLP_USERDATA);
+
+	if(!data && message != WM_CREATE) {
+		return DefWindowProcW(window, message, wparam, lparam);
+	}
+
 	switch(message) {
+	case WM_CREATE:
+		SetLastError(0);
+		return SetWindowLongPtrW(window, GWLP_USERDATA, (LONG_PTR) ((LPCREATESTRUCTW) lparam)->lpCreateParams) ? 0 : GetLastError() ? -1 : 0;
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		break;
+		return 0;
+	case WM_DISPLAYCHANGE:
+		InvalidateRect(window, NULL, 0);
+		return 0;
+	case WM_PAINT:
+		return 1;
+	case WM_SIZE:
+		if(data->target) {
+			ResizeTarget(data->target, lparam);
+		}
+
+		return 0;
 	}
 
 	return DefWindowProcW(window, message, wparam, lparam);
@@ -23,11 +50,15 @@ int WINAPI WinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previousInstance,
 		return 1;
 	}
 
-	ID2D1Factory* factory;
+	PDATA data = HeapAlloc(processHeap = GetProcessHeap(), 0, sizeof(DATA));
 	int codeExit = 1;
 
-	if(!InitializeDirect2D(&factory)) {
+	if(!data) {
 		goto uninitialize;
+	}
+
+	if(!InitializeDirect2D(&data->factory)) {
+		goto freeData;
 	}
 
 	WNDCLASSEXW windowClass = {0};
@@ -41,7 +72,7 @@ int WINAPI WinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previousInstance,
 		goto releaseFactory;
 	}
 
-	HWND window = CreateWindowExW(0L, CLASS_NAME, L"Demo Direct2D", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, instance, NULL);
+	HWND window = CreateWindowExW(0L, CLASS_NAME, L"Demo Direct2D", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, instance, data);
 
 	if(!window) {
 		goto unregisterClass;
@@ -69,7 +100,9 @@ destroyWindow:
 unregisterClass:
 	UnregisterClassW(CLASS_NAME, instance);
 releaseFactory:
-	ReleaseFactory(factory);
+	ReleaseFactory(data->factory);
+freeData:
+	HeapFree(processHeap, 0, data);
 uninitialize:
 	CoUninitialize();
 	return codeExit;
