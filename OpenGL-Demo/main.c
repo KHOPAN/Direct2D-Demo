@@ -5,6 +5,7 @@
 typedef struct {
 	ID2D1Factory* factory;
 	ID2D1HwndRenderTarget* target;
+	ID2D1SolidColorBrush* brush;
 } DATA, *PDATA;
 
 static HANDLE processHeap;
@@ -27,7 +28,12 @@ static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam
 		InvalidateRect(window, NULL, 0);
 		return 0;
 	case WM_PAINT:
-		return 1;
+		if(!data->target && !CreateResources(data->factory, window, &data->target, &data->brush)) {
+			return 0;
+		}
+
+		Render(data->target, data->brush);
+		return 0;
 	case WM_SIZE:
 		if(data->target) {
 			ResizeTarget(data->target, lparam);
