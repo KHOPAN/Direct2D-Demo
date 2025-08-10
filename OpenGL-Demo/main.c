@@ -23,13 +23,14 @@ int WINAPI WinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previousInstance,
 		return 1;
 	}
 
-	if(!InitializeDirect2D()) {
+	ID2D1Factory* factory;
+	int codeExit = 1;
+
+	if(!InitializeDirect2D(&factory)) {
 		goto uninitialize;
 	}
-uninitialize:
-	CoUninitialize();
-	return 0;
-	/*WNDCLASSEXW windowClass = {0};
+
+	WNDCLASSEXW windowClass = {0};
 	windowClass.cbSize = sizeof(WNDCLASSEXW);
 	windowClass.lpfnWndProc = windowProcedure;
 	windowClass.hInstance = instance;
@@ -37,14 +38,21 @@ uninitialize:
 	windowClass.lpszClassName = CLASS_NAME;
 
 	if(!RegisterClassExW(&windowClass)) {
-		return 1;
+		goto releaseFactory;
 	}
 
-	HWND window = CreateWindowExW(0L, CLASS_NAME, L"Demo Direct2D", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 400, NULL, NULL, instance, NULL);
-	int codeExit = 1;
+	HWND window = CreateWindowExW(0L, CLASS_NAME, L"Demo Direct2D", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, instance, NULL);
 
 	if(!window) {
 		goto unregisterClass;
+	}
+
+	double scale = ((double) GetDpiForWindow(window)) / 96.0;
+	UINT width = (UINT) (600.0 * scale);
+	UINT height = (UINT) (400.0 * scale);
+
+	if(!SetWindowPos(window, HWND_TOP, (UINT) ((((double) GetSystemMetrics(SM_CXSCREEN)) - ((double) width)) / 2.0), (UINT) ((((double) GetSystemMetrics(SM_CYSCREEN)) - ((double) height)) / 2.0), width, height, 0)) {
+		goto destroyWindow;
 	}
 
 	ShowWindow(window, show);
@@ -60,5 +68,9 @@ destroyWindow:
 	DestroyWindow(window);
 unregisterClass:
 	UnregisterClassW(CLASS_NAME, instance);
-	return codeExit; */
+releaseFactory:
+	ReleaseFactory(factory);
+uninitialize:
+	CoUninitialize();
+	return codeExit;
 }

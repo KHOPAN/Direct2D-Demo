@@ -5,7 +5,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-BOOLEAN InitializeDirect2D();
+BOOLEAN InitializeDirect2D(ID2D1Factory** factory);
+void ReleaseFactory(ID2D1Factory* factory);
 #ifdef __cplusplus
 }
 #endif
