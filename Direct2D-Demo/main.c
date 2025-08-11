@@ -29,9 +29,6 @@ static LRESULT CALLBACK windowProcedure(const HWND window, const UINT message, c
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
-	case WM_DISPLAYCHANGE:
-		InvalidateRect(window, NULL, 0);
-		return 0;
 	case WM_PAINT:
 		if((!data->target && (!GetClientRect(window, &bounds) || !CreateResources(data->factory, &data->target, &data->brush, window, bounds))) || !GetCursorPos(&location) || !ScreenToClient(window, &location)) {
 			return 0;
@@ -50,7 +47,7 @@ static LRESULT CALLBACK windowProcedure(const HWND window, const UINT message, c
 			data->angle = 90.0 - atan2(deltaX, deltaY) * 180.0 / M_PI;
 		}
 
-		Render(data->target, data->brush, (float) data->angle, (float) data->x, (float) data->y, 100, data->scale);
+		Render(data->target, data->brush, (float) data->angle, (float) data->x, (float) data->y, data->size, data->scale);
 		InvalidateRect(window, NULL, 0);
 		return 0;
 	case WM_SIZE:
@@ -108,8 +105,9 @@ int WINAPI WinMain(_In_ const HINSTANCE instance, _In_opt_ const HINSTANCE previ
 	}
 
 	const double scale = ((double) GetDpiForWindow(window)) / 96.0;
-	const int width = (int) (600.0 * scale);
-	const int height = (int) (400.0 * scale);
+	data->size = scale * 50.0;
+	const int width = (int) (scale * 600.0);
+	const int height = (int) (scale * 400.0);
 
 	if(!SetWindowPos(window, HWND_TOP, (int) ((((double) GetSystemMetrics(SM_CXSCREEN)) - ((double) width)) / 2.0), (int) ((((double) GetSystemMetrics(SM_CYSCREEN)) - ((double) height)) / 2.0), width, height, 0)) {
 		ERROR_DIALOG(L"SetWindowPos() failed");

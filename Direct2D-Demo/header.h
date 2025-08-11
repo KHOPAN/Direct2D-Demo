@@ -8,6 +8,7 @@ typedef struct {
 	ID2D1Factory* factory;
 	ID2D1HwndRenderTarget* target;
 	ID2D1SolidColorBrush* brush;
+	double size;
 	double x;
 	double y;
 	POINT previous;
