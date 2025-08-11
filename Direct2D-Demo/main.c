@@ -33,6 +33,7 @@ static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam
 		}
 
 		Render(data->target, data->brush);
+		InvalidateRect(window, NULL, 0);
 		return 0;
 	case WM_SIZE:
 		if(data->target) {
