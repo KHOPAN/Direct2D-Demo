@@ -2,7 +2,7 @@
 #include "header.h"
 #include <math.h>
 
-#define CLASS_NAME L"DemoDirect2DClassName"
+#define CLASS_NAME L"Direct2DDemo"
 
 typedef struct {
 	ID2D1Factory* factory;
@@ -21,7 +21,7 @@ static double minimum(const double x, const double y) {
 	return x < y ? x : y;
 }
 
-static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+static LRESULT CALLBACK windowProcedure(const HWND window, const UINT message, const WPARAM wparam, const LPARAM lparam) {
 	PDATA data = (PDATA) GetWindowLongPtrW(window, GWLP_USERDATA);
 
 	if(!data && message != WM_CREATE) {
@@ -80,21 +80,22 @@ static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam
 	return DefWindowProcW(window, message, wparam, lparam);
 }
 
-int WINAPI WinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previousInstance, _In_ LPSTR command, _In_ int show) {
+int WINAPI WinMain(_In_ const HINSTANCE instance, _In_opt_ const HINSTANCE previousInstance, _In_ const LPSTR command, _In_ const int show) {
 	if(!HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0)) {
+		ERROR_DIALOG(L"HeapSetInformation() failed");
 		return 1;
 	}
 
-	HRESULT result = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-
-	if(FAILED(result)) {
+	if(FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED))) {
+		ERROR_DIALOG(L"CoInitializeEx() failed");
 		return 1;
 	}
 
-	PDATA data = HeapAlloc(processHeap = GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(DATA));
+	const PDATA data = HeapAlloc(processHeap = GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(DATA));
 	int codeExit = 1;
 
 	if(!data) {
+		ERROR_DIALOG(L"HeapAlloc() failed");
 		goto uninitialize;
 	}
 
@@ -104,26 +105,30 @@ int WINAPI WinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previousInstance,
 
 	WNDCLASSEXW windowClass = {0};
 	windowClass.cbSize = sizeof(WNDCLASSEXW);
+	windowClass.style = CS_HREDRAW | CS_VREDRAW;
 	windowClass.lpfnWndProc = windowProcedure;
 	windowClass.hInstance = instance;
 	windowClass.hCursor = LoadCursorW(NULL, IDC_ARROW);
 	windowClass.lpszClassName = CLASS_NAME;
 
 	if(!RegisterClassExW(&windowClass)) {
+		ERROR_DIALOG(L"RegisterClassExW() failed");
 		goto releaseFactory;
 	}
 
-	HWND window = CreateWindowExW(0L, CLASS_NAME, L"Demo Direct2D", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, instance, data);
+	const HWND window = CreateWindowExW(0L, CLASS_NAME, L"Direct2D Demo", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, instance, data);
 
 	if(!window) {
+		ERROR_DIALOG(L"CreateWindowExW() failed");
 		goto unregisterClass;
 	}
 
-	double scale = ((double) GetDpiForWindow(window)) / 96.0;
-	UINT width = (UINT) (600.0 * scale);
-	UINT height = (UINT) (400.0 * scale);
+	const double scale = ((double) GetDpiForWindow(window)) / 96.0;
+	const int width = (int) (600.0 * scale);
+	const int height = (int) (400.0 * scale);
 
-	if(!SetWindowPos(window, HWND_TOP, (UINT) ((((double) GetSystemMetrics(SM_CXSCREEN)) - ((double) width)) / 2.0), (UINT) ((((double) GetSystemMetrics(SM_CYSCREEN)) - ((double) height)) / 2.0), width, height, 0)) {
+	if(!SetWindowPos(window, HWND_TOP, (int) ((((double) GetSystemMetrics(SM_CXSCREEN)) - ((double) width)) / 2.0), (int) ((((double) GetSystemMetrics(SM_CYSCREEN)) - ((double) height)) / 2.0), width, height, 0)) {
+		ERROR_DIALOG(L"SetWindowPos() failed");
 		goto destroyWindow;
 	}
 
