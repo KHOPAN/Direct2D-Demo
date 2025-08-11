@@ -1,19 +1,10 @@
-#define _USE_MATH_DEFINES
 #include "header.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #define CLASS_NAME L"Direct2DDemo"
 
-typedef struct {
-	ID2D1Factory* factory;
-	ID2D1HwndRenderTarget* target;
-	ID2D1SolidColorBrush* brush;
-	double circleX;
-	double circleY;
-	POINT previousMouse;
-	double scale;
-	double angle;
-} DATA, *PDATA;
+#define SPEED 0.17
 
 static HANDLE processHeap;
 
@@ -22,11 +13,14 @@ static double minimum(const double x, const double y) {
 }
 
 static LRESULT CALLBACK windowProcedure(const HWND window, const UINT message, const WPARAM wparam, const LPARAM lparam) {
-	PDATA data = (PDATA) GetWindowLongPtrW(window, GWLP_USERDATA);
+	const PDATA data = (PDATA) GetWindowLongPtrW(window, GWLP_USERDATA);
 
 	if(!data && message != WM_CREATE) {
 		return DefWindowProcW(window, message, wparam, lparam);
 	}
+
+	RECT bounds;
+	POINT location;
 
 	switch(message) {
 	case WM_CREATE:
@@ -39,34 +33,24 @@ static LRESULT CALLBACK windowProcedure(const HWND window, const UINT message, c
 		InvalidateRect(window, NULL, 0);
 		return 0;
 	case WM_PAINT:
-		if(!data->target && !CreateResources(data->factory, window, &data->target, &data->brush)) {
+		if((!data->target && (!GetClientRect(window, &bounds) || !CreateResources(data->factory, &data->target, &data->brush, window, bounds))) || !GetCursorPos(&location) || !ScreenToClient(window, &location)) {
 			return 0;
 		}
 
-		POINT location;
-
-		if(!GetCursorPos(&location)) {
-			return 0;
-		}
-
-		ScreenToClient(window, &location);
-		double speed = 0.17;
-		data->circleX += (((double) location.x) - data->circleX) * speed;
-		data->circleY += (((double) location.y) - data->circleY) * speed;
-		int deltaMouseX = location.x - data->previousMouse.x;
-		int deltaMouseY = location.y - data->previousMouse.y;
-		data->previousMouse.x = location.x;
-		data->previousMouse.y = location.y;
-		double velocity = minimum(sqrt(((double) deltaMouseX) * ((double) deltaMouseX) + ((double) deltaMouseY) * ((double) deltaMouseY)) * 4.0, 150.0);
-		double scale = velocity / 150.0 * 0.5;
-		data->scale += (scale - data->scale) * speed;
-		double angle = (90.0 - (atan2(deltaMouseX, deltaMouseY) * 180.0 / M_PI));
+		data->x += (((double) location.x) - data->x) * SPEED;
+		data->y += (((double) location.y) - data->y) * SPEED;
+		const LONG deltaX = location.x - data->previous.x;
+		const LONG deltaY = location.y - data->previous.y;
+		data->previous.x = location.x;
+		data->previous.y = location.y;
+		const double velocity = minimum(sqrt(deltaX * deltaX + deltaY * deltaY) * 4.0, 150.0);
+		data->scale += (velocity / 300.0 - data->scale) * SPEED;
 
 		if(velocity > 20.0) {
-			data->angle = angle;
+			data->angle = 90.0 - atan2(deltaX, deltaY) * 180.0 / M_PI;
 		}
 
-		Render(data->target, data->brush, data->angle, data->scale, data->circleX, data->circleY);
+		Render(data->target, data->brush, (float) data->angle, (float) data->x, (float) data->y, 100, data->scale);
 		InvalidateRect(window, NULL, 0);
 		return 0;
 	case WM_SIZE:
@@ -113,7 +97,7 @@ int WINAPI WinMain(_In_ const HINSTANCE instance, _In_opt_ const HINSTANCE previ
 
 	if(!RegisterClassExW(&windowClass)) {
 		ERROR_DIALOG(L"RegisterClassExW() failed");
-		goto releaseFactory;
+		goto freeResources;
 	}
 
 	const HWND window = CreateWindowExW(0L, CLASS_NAME, L"Direct2D Demo", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, instance, data);
@@ -145,8 +129,8 @@ destroyWindow:
 	DestroyWindow(window);
 unregisterClass:
 	UnregisterClassW(CLASS_NAME, instance);
-releaseFactory:
-	ReleaseFactory(data->factory);
+freeResources:
+	FreeResources(data);
 freeData:
 	HeapFree(processHeap, 0, data);
 uninitialize:

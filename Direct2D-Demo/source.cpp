@@ -4,22 +4,25 @@ BOOLEAN CreateResources(ID2D1Factory* const factory, ID2D1HwndRenderTarget** con
 	return SUCCEEDED(factory->CreateHwndRenderTarget(D2D1::RenderTargetProperties(), D2D1::HwndRenderTargetProperties(window, D2D1::SizeU(bounds.right - bounds.left, bounds.bottom - bounds.top)), target)) && SUCCEEDED((*target)->CreateSolidColorBrush(D2D1::ColorF(0xFFFFFF, 1.0), brush));
 }
 
-void FreeResources(ID2D1HwndRenderTarget* const target, ID2D1SolidColorBrush* const brush) {
-	target->Release();
-	brush->Release();
+void FreeResources(const PDATA data) {
+	if(data->target) {
+		data->target->Release();
+	}
+
+	if(data->brush) {
+		data->brush->Release();
+	}
+
+	data->factory->Release();
 }
 
-BOOLEAN InitializeDirect2D(const ID2D1Factory** const factory) {
-	if(!FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, factory))) {
+BOOLEAN InitializeDirect2D(ID2D1Factory** const factory) {
+	if(FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, factory))) {
 		ERROR_DIALOG(L"D2D1CreateFactory() failed");
 		return FALSE;
 	}
 
 	return TRUE;
-}
-
-void ReleaseFactory(ID2D1Factory* const factory) {
-	factory->Release();
 }
 
 void Render(ID2D1HwndRenderTarget* const target, ID2D1SolidColorBrush* const brush, const float angle, const float x, const float y, const double size, const double scale) {
