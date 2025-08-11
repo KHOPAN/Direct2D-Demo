@@ -9,7 +9,7 @@ BOOLEAN InitializeDirect2D(ID2D1Factory** factory);
 void ReleaseFactory(ID2D1Factory* factory);
 void ResizeTarget(ID2D1HwndRenderTarget* target, LPARAM lparam);
 BOOLEAN CreateResources(ID2D1Factory* factory, HWND window, ID2D1HwndRenderTarget** target, ID2D1SolidColorBrush** brush);
-void Render(ID2D1HwndRenderTarget* target, ID2D1SolidColorBrush* brush);
+void Render(ID2D1HwndRenderTarget* target, ID2D1SolidColorBrush* brush, double angle, double scale, double x, double y);
 #ifdef __cplusplus
 }
 #endif

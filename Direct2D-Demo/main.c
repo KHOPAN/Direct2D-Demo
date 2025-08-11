@@ -1,4 +1,6 @@
+#define _USE_MATH_DEFINES
 #include "header.h"
+#include <math.h>
 
 #define CLASS_NAME L"DemoDirect2DClassName"
 
@@ -6,9 +8,18 @@ typedef struct {
 	ID2D1Factory* factory;
 	ID2D1HwndRenderTarget* target;
 	ID2D1SolidColorBrush* brush;
+	double circleX;
+	double circleY;
+	POINT previousMouse;
+	double scale;
+	double angle;
 } DATA, *PDATA;
 
 static HANDLE processHeap;
+
+static double minimum(const double x, const double y) {
+	return x < y ? x : y;
+}
 
 static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 	PDATA data = (PDATA) GetWindowLongPtrW(window, GWLP_USERDATA);
@@ -32,7 +43,30 @@ static LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wparam
 			return 0;
 		}
 
-		Render(data->target, data->brush);
+		POINT location;
+
+		if(!GetCursorPos(&location)) {
+			return 0;
+		}
+
+		ScreenToClient(window, &location);
+		double speed = 0.17;
+		data->circleX += (((double) location.x) - data->circleX) * speed;
+		data->circleY += (((double) location.y) - data->circleY) * speed;
+		int deltaMouseX = location.x - data->previousMouse.x;
+		int deltaMouseY = location.y - data->previousMouse.y;
+		data->previousMouse.x = location.x;
+		data->previousMouse.y = location.y;
+		double velocity = minimum(sqrt(((double) deltaMouseX) * ((double) deltaMouseX) + ((double) deltaMouseY) * ((double) deltaMouseY)) * 4.0, 150.0);
+		double scale = velocity / 150.0 * 0.5;
+		data->scale += (scale - data->scale) * speed;
+		double angle = (90.0 - (atan2(deltaMouseX, deltaMouseY) * 180.0 / M_PI));
+
+		if(velocity > 20.0) {
+			data->angle = angle;
+		}
+
+		Render(data->target, data->brush, data->angle, data->scale, data->circleX, data->circleY);
 		InvalidateRect(window, NULL, 0);
 		return 0;
 	case WM_SIZE:
@@ -57,7 +91,7 @@ int WINAPI WinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE previousInstance,
 		return 1;
 	}
 
-	PDATA data = HeapAlloc(processHeap = GetProcessHeap(), 0, sizeof(DATA));
+	PDATA data = HeapAlloc(processHeap = GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(DATA));
 	int codeExit = 1;
 
 	if(!data) {
